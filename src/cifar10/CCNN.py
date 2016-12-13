@@ -196,22 +196,10 @@ def get_pixel_index_matrix(center_x, center_y, radius, image_width):
             matrix[x+y*(2*radius+1)] = get_pixel_vector(cursor_x, cursor_y, radius, image_width)
     return matrix
 
-def project_to_low_rank(A, rank, d1, d2):
-    A = np.reshape(A, (9*d1, d2))
-    (U, s, V) = LA.svd(A, full_matrices=False)
-    s[rank:] *= 0
-    return np.reshape(np.dot(U, np.dot(np.diag(s), V)), (9, d1*d2)), U, s, V
-
 def project_to_trace_norm(A, trace_norm, d1, d2):
     A = np.reshape(A, (9*d1, d2))
     (U, s, V) = LA.svd(A, full_matrices=False)
     s = euclidean_proj_l1ball(s, s=trace_norm)
-    return np.reshape(np.dot(U, np.dot(np.diag(s), V)), (9, d1*d2)), U, s, V
-
-def project_to_trace_regularizer(A, trace_regularizer, d1, d2):
-    A = np.reshape(A, (9*d1, d2))
-    (U, s, V) = LA.svd(A, full_matrices=False)
-    s = np.maximum(s-trace_regularizer, 0)
     return np.reshape(np.dot(U, np.dot(np.diag(s), V)), (9, d1*d2)), U, s, V
 
 def evaluate_classifier(X_train, X_test, Y_train, Y_test, A):
@@ -285,8 +273,7 @@ def low_rank_matrix_regression(X_train, Y_train, X_test, Y_test, d1, d2, reg, n_
         end = time.time()
         computation_time += end - start
 
-
-        if (t+1) % 250 == 0:
+        if (t+1) % 100 == 0:
             A_avg = A_sum / count
             loss, error_train, error_test = evaluate_classifier(central_crop(X_train, d1, d2, ratio),
                                                                 central_crop(X_test, d1, d2, ratio), Y_train, Y_test, A_avg)
@@ -499,14 +486,17 @@ tprint("==========")
 global_n_train = 50000
 global_n_test = 10000
 
+# Generating the first layer is the most memory consuming step.
+# If you have a big memory, then set nystrom_dim=2000 for better accuracy.
+
 generate_next_layer(n_train=global_n_train, n_test=global_n_test, input_file=name+".image", output_file=name+".feature1", label_file=name+".label",
-                    chunk_size=2500, gamma=2, nystrom_dim=1000, regularization_param=1000, crop_ratio=0.75,
-                    learning_rate=1, n_iter=1000, generate_new_feature=True)
+                    chunk_size=2500, gamma=1, nystrom_dim=1000, regularization_param=1000, crop_ratio=0.75,
+                    learning_rate=1, n_iter=500, generate_new_feature=True)
 
 generate_next_layer(n_train=global_n_train, n_test=global_n_test, input_file=name+".feature1", output_file=name+".feature2", label_file=name+".label",
-                    chunk_size=2500, gamma=2, nystrom_dim=2000, regularization_param=500, crop_ratio=0.75,
+                    chunk_size=5000, gamma=2, nystrom_dim=2000, regularization_param=1000, crop_ratio=0.75,
                     learning_rate=1, n_iter=1000, generate_new_feature=True)
 
 generate_next_layer(n_train=global_n_train, n_test=global_n_test, input_file=name+".feature2", output_file=name+".feature3", label_file=name+".label",
                      chunk_size=5000, gamma=2, nystrom_dim=2000, regularization_param=1000, crop_ratio=1,
-                     learning_rate=1, n_iter=2000, generate_new_feature=True)
+                     learning_rate=1, n_iter=5000, generate_new_feature=True)

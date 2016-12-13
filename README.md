@@ -6,6 +6,6 @@ The CCNN.py file implements the CCNN model based on numpy and numexpr.
 
 The TFCNN.py file implements the baseline CNN model based on Tensorflow.
 
-Note: the current CCNN implementation caches all feature vectors in the memory. It results in a high memory requirement (~50GB for the cifar10 dataset).
+Note: the current CCNN implementation caches all feature vectors in the memory. It results in a high memory requirement (~10GB for the mnist datasets, ~50GB for the cifar10 dataset).
 
 
